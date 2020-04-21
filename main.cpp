@@ -6,13 +6,17 @@
 #include <ctime>
 using namespace std;
 enum Mode { Easy, Medium, Difficult };//选择障碍物数量
-enum Pace{Low, Average, High};//选择速度模式
-enum WallOrNot {wall,wudi};//能否穿墙
+enum Pace{Slow, Average, High};//选择速度模式
+enum Wall {Yes,No};//能否穿墙
 //考虑增加穿墙模式
 //自定义背景和蛇颜色
 bool Win = 1;
-int Points = 0;
+Mode mode = Medium;
+Pace pace = Average;
+Wall wall = Yes;
+int Points = 10;
 int width = 15;
+clock_t start, stop;
 int map[64][48] = {0};//方便整坐标
 class Object
 {
@@ -113,8 +117,11 @@ public:
 					setlinecolor(BLACK);
 					for (int j = 0; j < cnt; j++)
 					{
-						if(!map[x + j][y])fillrectangle((x + j) * width, y * width, (x + j + 1) * width, (y + 1) * width);
-						map[x + j][y] = 1;
+						if (map[x + j][y] != 2)
+						{
+							fillrectangle((x + j) * width, y * width, (x + j + 1) * width, (y + 1) * width);
+							map[x + j][y] = 1;
+						}
 					}
 				}
 				else
@@ -125,8 +132,11 @@ public:
 					setlinecolor(BLACK);
 					for (int j = 0; j < cnt; j++)
 					{
-						if(!map[x][y+j])fillrectangle(x * width, (y + j) * width, (x + 1) * width, (y + j + 1) * width);
-						map[x][y + j] = 1;
+						if (!map[x][y + j])
+						{
+							fillrectangle(x * width, (y + j) * width, (x + 1) * width, (y + j + 1) * width);
+							map[x][y + j] = 1;
+						}
 					}
 				}
 		}
@@ -137,6 +147,48 @@ public:
 	}
 private:
 };
+//先生成蛇，再生成Barrier,判断，以避开蛇
+void barrier()
+{
+	//Mode a = Medium;
+		//Easy生成4-6组 3
+		//Medium生成8-10组 3
+		//Difficult生成11-15；5
+	int n = rand() % 3 + 15;//生成n组Barrier
+	int cnt;//每组生成几个块 5-8
+	int x;
+	int y;
+	int rowOrCol;//生成列块还是行块
+	for (int i = 0; i < n; i++)
+	{
+		rowOrCol = rand() % 2;
+		cnt = rand() % 6 + 10;
+		if (rowOrCol == 1)//生成行块
+		{
+			x = rand() % (65 - cnt);
+			y = rand() % 48;
+			setfillcolor(RGB(30,30,30));
+			setlinecolor(RGB(50, 50, 50));
+			for (int j = 0; j < cnt; j++)
+			{
+				if (!map[x + j][y])fillrectangle((x + j) * width, y * width, (x + j + 1) * width, (y + 1) * width);
+				map[x + j][y] = 1;
+			}
+		}
+		else
+		{
+			x = rand() % 64;
+			y = rand() % (49 - cnt);
+			setfillcolor(RGB(30, 30, 30));
+			setlinecolor(RGB(50, 50, 50));
+			for (int j = 0; j < cnt; j++)
+			{
+				if (!map[x][y + j])fillrectangle(x * width, (y + j) * width, (x + 1) * width, (y + j + 1) * width);
+				map[x][y + j] = 1;
+			}
+		}
+	}
+}
 class Space : public Object
 {
 public:
@@ -216,7 +268,7 @@ public:
 			break;
 		}
 		head = new Body(x,y,direction);
-		map[x][y] = 1;
+		map[x][y] = 2;
 		Body* p=head;
 		Body* pp;
 		for (int i = 1; i < length - 1; i++)
@@ -225,25 +277,25 @@ public:
 			{
 			case 1:
 				pp = new Body(x + i, y, direction, p);
-				map[x + i][y] = 1;
+				map[x + i][y] = 2;
 				p->next = pp;
 				p = pp;
 				break;
 			case 2:
 				pp = new Body(x - i, y, direction, p);
-				map[x - i][y] = 1;
+				map[x - i][y] = 2;
 				p->next = pp;
 				p = pp;
 				break;
 			case 3:
 				pp = new Body(x, y + i, direction, p);
-				map[x][y + i] = 1;
+				map[x][y + i] = 2;
 				p->next = pp;
 				p = pp;
 				break;
 			case 4:
 				pp = new Body(x, y - i, direction, p);
-				map[x][y - i] = 1;
+				map[x][y - i] = 2;
 				p->next = pp;
 				p = pp;
 				break;
@@ -256,25 +308,25 @@ public:
 		{
 		case 1:
 			pp = new Body(x + (length-1), y, direction, p);
-			map[x + (length - 1)][y] = 1;
+			map[x + (length - 1)][y] = 2;
 			p->next = pp;
 			rear = pp;
 			break;
 		case 2:
 			pp = new Body(x - (length - 1), y, direction, p);
-			map[x - (length - 1)][y] = 1;
+			map[x - (length - 1)][y] = 2;
 			p->next = pp;
 			rear = pp;
 			break;
 		case 3:
 			pp = new Body(x, y + (length - 1), direction, p);
-			map[x][y + (length - 1)] = 1;
+			map[x][y + (length - 1)] = 2;
 			p->next = pp;
 			rear = pp;
 			break;
 		case 4:
 			pp = new Body(x, y - (length - 1), direction, p);
-			map[x][y - (length - 1)] = 1;
+			map[x][y - (length - 1)] = 2;
 			p->next = pp;
 			rear = pp;
 			break;
@@ -337,6 +389,10 @@ public:
 		default:
 			break;
 		}
+		if (head->x == 65)head->x = 0;
+		if (head->y == 49)head->y = 0;
+		if (head->x == -1)head->x = 63;
+		if (head->y == -1)head->y = 47;
 	}
 	void grow(int n=1)
 	{
@@ -406,7 +462,7 @@ public:
 			head->dir = direction;
 		}
 	}
-	void examine()
+	bool examine()
 	{
 		int x = head->x;
 		int y = head->y;
@@ -415,11 +471,17 @@ public:
 		{
 			if (x == p->x && y == p->y)
 			{
-				Sleep(2000);
-				break;
+				_getch();
+				return false;
 			}
 			p = p->next;
 		}
+		if (map[x][y] == 1)
+		{	
+			_getch();
+			return false;
+		}
+		return true;
 	}
     Body* head;
 	Body* rear;
@@ -436,48 +498,7 @@ void init()
 
 }//随机初始化界面
 
- //先生成蛇，再生成Barrier,判断，以避开蛇
-void barrier()
-{
-	//Mode a = Medium;
-		//Easy生成4-6组 3
-		//Medium生成8-10组 3
-		//Difficult生成11-15；5
-	int n = rand() % 3 + 15;//生成n组Barrier
-	int cnt;//每组生成几个块 5-8
-	int x;
-	int y;
-	int rowOrCol;//生成列块还是行块
-	for (int i = 0; i < n; i++)
-	{
-		rowOrCol = rand() % 2;
-		cnt = rand() % 4 + 8;
-		if (rowOrCol==1)//生成行块
-		{
-			x = rand() % (65 - cnt);
-			y = rand() % 48;
-			setfillcolor(LIGHTGRAY);
-			setlinecolor(DARKGRAY);
-			for (int j = 0; j < cnt; j++)
-			{
-				if (!map[x + j][y])fillrectangle((x + j) * width, y * width, (x + j + 1) * width, (y + 1) * width);
-				map[x + j][y] = 1;
-			}
-		}
-		else
-		{
-			x = rand() % 64;
-			y = rand() % (49 - cnt);
-			setfillcolor(LIGHTGRAY);
-			setlinecolor(DARKGRAY);
-			for (int j = 0; j < cnt; j++)
-			{
-				if (!map[x][y + j])fillrectangle(x * width, (y + j) * width, (x + 1) * width, (y + j + 1) * width);
-				map[x][y + j] = 1;
-			}
-		}
-	}
-}
+ 
 
 
 void draw(Object* pOb)
@@ -514,6 +535,84 @@ int timeVersusPoints()
 	return 1;
 }
 char c;
+void print()
+{
+	TCHAR s1[] = _T("Points: ");
+	outtextxy(876, 10, s1);
+	TCHAR x1[5];
+	_stprintf_s(x1, _T("%d"), Points);   
+	outtextxy(928, 10, x1);
+	
+
+	TCHAR s2[] = _T("Length: ");
+	outtextxy(876, 30, s2);
+	TCHAR x2[5];
+	_stprintf_s(x2, _T("%d"), Points);
+	outtextxy(928, 30, x2);
+
+
+	TCHAR s3[] = _T("Mode: ");
+	outtextxy(876, 70, s3);
+
+	if (mode == 0)
+	{
+		TCHAR x3[] = _T("Easy");
+		outtextxy(920, 70, x3);
+	}
+	else if (mode == 1)
+	{
+		TCHAR x3[] = _T("Medi");
+		outtextxy(920, 70, x3);
+	}
+	else if (mode == 2)
+	{
+		TCHAR x3[] = _T("Diff");
+		outtextxy(920, 70, x3);
+	}
+
+
+	TCHAR s4[] = _T("Pace: ");
+	outtextxy(876, 90, s4);
+
+	if (pace == 0)
+	{
+		TCHAR x4[] = _T("Slow");
+		outtextxy(920, 90, x4);
+	}
+	else if (pace == 1)
+	{
+		TCHAR x4[] = _T("Avera");
+		outtextxy(920, 90, x4);
+	}
+	else if (mode == 2)
+	{
+		TCHAR x4[] = _T("High");
+		outtextxy(920, 90, x4);
+	}
+	
+}
+
+void printTime()
+{
+	stop = clock();
+	int duration = (int)(stop - start) / CLOCKS_PER_SEC;
+	int minute = duration / 60;
+	int	second = duration % 60;
+
+	TCHAR s1[] = _T("Time: ");
+	outtextxy(876, 50, s1);
+	TCHAR x1[3];
+	_stprintf_s(x1, _T("%d"), 12);
+	outtextxy(916, 50, x1);
+
+	TCHAR s2[] = _T(":");
+	outtextxy(933, 50, s2);
+
+	TCHAR x2[3];
+	_stprintf_s(x2, _T("%d"), 54);
+	outtextxy(938, 50, x2);
+
+}
 void game()
 {
 	Snake s;
@@ -521,8 +620,9 @@ void game()
 	Food f;
 	//s.draw1();
 	BeginBatchDraw();
-	int cnt= 1;
-	int time = 200;
+	int cnt = 1;
+	int time = 100;
+	start = clock();
 	while (Win)
 	{
 		c = '0';
@@ -534,11 +634,13 @@ void game()
 		s.move();
 
 
-		//judge();
-		s.examine();
-
+	
+		if (!s.examine())
+			return;
+		
 		if (f.radius == 0.5 && f.x - f.radius == s.head->x && f.y - f.radius == s.head->y)
 		{
+			Points++;
 			f.clear();
 			s.grow();
 			f.reset();
@@ -547,38 +649,99 @@ void game()
 		{
 			if (f.x - f.radius == s.head->x && f.y - f.radius == s.head->y || f.x == s.head->x && f.y == s.head->y || f.x - f.radius == s.head->x && f.y == s.head->y || f.x == s.head->x && f.y - f.radius == s.head->y)
 			{
+				Points += 2;
 				f.clear();
 				s.grow();
 				f.reset();
 			}
 		}
-		
-		
+		print();
+		printTime();
 		s.draw();
-		//if (n % 6 == 0)s.grow();
 		f.draw();
-		//if(n % 12==0)f.clear();
 		FlushBatchDraw();
-		
+
 		Sleep(time);
-		
+
 		s.clear();
 	}
+}
+void choose()
+{
+	TCHAR s1[] = _T("Mode (define the amount of barriers, 1 for easy, 2 for medium, 3 for difficult)");
+	outtextxy(200, 260, s1);
+	TCHAR s2[] = _T("Pace (define the speed of snake, 4 for slow, 5 for average, 6 for high)");
+	outtextxy(200, 280, s2);
+	TCHAR s3[] = _T("Wall (Can the snake cross boarder, 7 for yes, 8 for no)");
+	outtextxy(220, 300, s3);
+
+	TCHAR s4[] = _T("Cin in order with keyboard ( for example: 256 ), then click Enter");
+	outtextxy(210, 320, s4);
+
+	char mmode, ppace, wwall;
+		mmode = _getch();
+		ppace = _getch();
+		wwall = _getch();
+		switch (mmode)
+		{
+		case '1':
+			mode = Easy;
+			break;
+		case '2':
+			mode = Medium;
+			break;
+		case '3':
+			mode = Difficult;
+			break;
+		default:
+			break;
+		}
+		switch (ppace)
+		{
+		case '4':
+			pace = Slow;
+			break;
+		case '5':
+			pace = Average;
+			break;
+		case '6':
+			pace = High;
+			break;
+		default:
+			break;
+		}
+		switch (wwall)
+		{
+		case '7':
+			wall = Yes;
+			break;
+		case '8':
+			wall = No;
+			break;
+		default:
+			break;
+		}
+		wwall = _getch();
+		cleardevice();
 }
 int main()
 {
     initgraph(960, 720);
 	setbkcolor(DARKGRAY);
 	cleardevice();
+
+	choose();
+
 	srand(time(0));
-	//Food f;
-	//f.draw();
 	game();
-	//fillcircle(62*15, 45*15,  0.5* width);
-	//cout << "???" << endl;*/
-	Sleep(2000);
     //f.clear();
-	//EndBatchDraw();
+	EndBatchDraw();
+
+	cleardevice();
+	settextstyle(25, 0, _T("黑体"));
+	TCHAR s1[] = _T("Sorry, you died!");
+	outtextxy(400, 340, s1);
+	_getch();
     closegraph();
     return 0;
 }
