@@ -19,7 +19,11 @@ int Points = 0;//单人模式的分数/双人模式中彩蛇的分数
 int Points1 = 0;//双人模式中白蛇的分数
 int width = 15;//规定的像素值
 clock_t start, stop;//计时器
+
+
 int map[64][48] = {0};//画布，用以标记障碍坐标，判断蛇是否碰到
+
+
 //构成蛇身的节点，结构体
 struct Body
 {
@@ -61,6 +65,8 @@ struct Body
 		fillrectangle(x * width, y * width, (x + 1) * width, (y + 1) * width);
 	}
 };
+
+
 //基类/抽象类，，，其实没必要
 class Object
 {
@@ -399,6 +405,8 @@ public:
 			head->dir = direction;
 		}
 	}
+	
+	
 	//检验，是否撞墙，是否吃到自己
 	bool examine()
 	{
@@ -780,8 +788,8 @@ public:
 		int y = f.gety();
 		if (r == 0.5 && x == head->x && y == head->y)
 		{
-			Points++;
-			clear();
+			Points1++;
+			f.clear();
 			grow();
 			f.reset();
 		}
@@ -789,8 +797,8 @@ public:
 		{
 			if (x == head->x && y == head->y || x + r == head->x && y + r == head->y || x == head->x && y + r == head->y || x + r == head->x && y == head->y)
 			{
-				Points += 2;
-				clear();
+				Points1 += 2;
+				f.clear();
 				grow();
 				f.reset();
 			}
@@ -848,8 +856,6 @@ private:
 	int length;
 	int direction;//1← 2→ 3↑ 4↓
 };
-
-
 
 //障碍类
 class Barrier : public Object
@@ -937,7 +943,12 @@ int judge(Snake s1, Snake1 s2)
 	int y2 = s2.head->y;
 	Body* p1 = s1.head->next;
 	Body* p2 = s2.head->next;
-	if (x1 == x2 && y1 == y2)return 4;
+	if (x1 == x2 && y1 == y2)
+	{
+		if (Points > Points1)return 1;
+		else if (Points < Points1)return 2;
+		else return 4;
+	}
 	for (int i = 0; i < s1.getLength() - 1; i++)
 	{
 		if (x2 == p1->x && y2 == p1->y)
@@ -1132,6 +1143,7 @@ void game()
 			c = _getch();
 		s.changeDirection(c);
 
+		
 		step++;
 		s.move();
 
@@ -1232,10 +1244,10 @@ void choose()
 	TCHAR s3[] = _T("Wall (Can the snake cross boarder, 7 for yes, 8 for no)");
 	outtextxy(250, 300, s3);
 
-	TCHAR s6[] = _T("9 for single, 10 for double");
+	TCHAR s6[] = _T("9 for single, 0 for double");
 	outtextxy(320, 320, s6);
 
-	TCHAR s4[] = _T("Cin in order with keyboard ( for example: 256 ), then click Enter");
+	TCHAR s4[] = _T("Cin in order with keyboard ( for example: 2569 ), then click Enter");
 	outtextxy(240, 340, s4);
 
 	TCHAR s5[] = _T("In the game, click Esc for Pulse");
@@ -1351,4 +1363,3 @@ int main()
     closegraph();
     return 0;
 }
-
